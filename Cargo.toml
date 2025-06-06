@@ -1,0 +1,23 @@
+[package]
+name = "crowdfundd"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = "4"
+anyhow = "1.0.98"
+axum = { version = "0.8.4", features = ["multipart", "macros"] }
+axum-extra = { version = "0.10.1", features = ["cookie-private", "cookie"] }
+chrono = { version = "0.4.41", features = ["clock"] }
+dotenv = "0.15"
+oauth2 = "5.0.0"
+reqwest = "0.12.19"
+shuttle-secrets = "0.42.0"
+shuttle-shared-db = { version = "0.55.0", features = ["postgres", "sqlx"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "macros", "chrono", "mysql"] }
+thiserror = "2.0.12"
+tower-http = { version = "0.6.6", features = ["cors", "fs"] }
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1.41"
+toml = "0.8"
