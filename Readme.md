@@ -10,6 +10,6 @@ A Rust-based SaaS backend for a Patreon-like crowdfunding platform tailored for 
 ## Todo:
  - User Authentication
  - Payments integration
- - 
+ - lol
 
 
