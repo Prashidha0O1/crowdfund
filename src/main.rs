@@ -23,7 +23,10 @@ use crate::handlers::{auth_handlers, dashboard_handlers, home_handlers, user_han
 async fn main() {
     // Initialize logging
     env_logger::init();
-
+    std::env::set_var("DATABASE_URL", "");
+    std::env::set_var("GOOGLE_CLIENT_ID", "");
+    std::env::set_var("GOOGLE_CLIENT_SECRET", "");
+    std::env::set_var("GOOGLE_REDIRECT_URI", "");
     // Load configuration from environment variables
     let config = Config::from_env().expect("Failed to load configuration from environment variables");
     
