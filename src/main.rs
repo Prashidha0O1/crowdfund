@@ -1,5 +1,5 @@
 mod auth;
-
+mod routes;
 use axum::{
     extract::{FromRef, Extension},
     response::Html,
@@ -28,45 +28,6 @@ impl FromRef<AppState> for Key {
     }
 }
 
-async fn homepage(Extension(oauth_id): Extension<String>) -> Html<String> {
-    Html(format!(
-        r#"<!DOCTYPE html>
-<html>
-<head>
-    <title>Welcome to Crowdfund</title>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-        }}
-        .login-button {{
-            display: inline-block;
-            background-color: #4285f4;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 20px;
-        }}
-        .login-button:hover {{
-            background-color: #357abd;
-        }}
-    </style>
-</head>
-<body>
-    <h1>Welcome to Crowdfund!</h1>
-    <p>Please sign in to continue</p>
-    <a href="https://accounts.google.com/o/oauth2/v2/auth?scope=openid%20profile%20email&client_id={oauth_id}&response_type=code&redirect_uri=http://localhost:8081/auth/google/callback" class="login-button">
-        Sign in with Google
-    </a>
-</body>
-</html>"#
-    ))
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv::dotenv().ok();
@@ -93,7 +54,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let router = Router::new()
-        .route("/", get(homepage))
+        .route("/", get(routes::landing_page))
+        .route("/login", get(routes::login_page))
+        .route("/home", get(|Extension(oauth_id): Extension<String>| routes::homepage(oauth_id)))
         .route("/auth/google", get(auth::oauth::google_login))
         .route("/auth/google/callback", get(auth::oauth::google_callback))
         .with_state(state)
