@@ -1,0 +1,89 @@
+use mysql_async::{prelude::*, Conn};
+// Added missing imports from the `rand` crate
+use rand::{distributions::Alphanumeric, Rng};
+use serde::{Deserialize, Serialize};
+
+// Corrected the module imports by splitting them into separate lines
+use crate::auth::google_oauth::GoogleUser;
+use crate::error::AppError;
+
+/// Represents a user (creator) in the database.
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct User {
+    pub id: u64,
+    pub google_id: String,
+    pub username: String,
+    pub email: String,
+    pub avatar_url: Option<String>,
+}
+
+impl User {
+    /// Creates a new user from Google OAuth info, ensuring the username is unique.
+    pub async fn create_from_google_user(
+        conn: &mut Conn,
+        google_user: &GoogleUser,
+    ) -> Result<User, AppError> {
+        let base_username = google_user.name.to_lowercase().replace(|c: char| !c.is_alphanumeric(), "");
+        let mut username = base_username.clone();
+
+        // Ensure username is unique
+        let mut counter = 1;
+        while Self::find_by_username(conn, &username).await?.is_some() {
+            if counter == 1 {
+                // For the first collision, append a short random string
+                let suffix: String = rand::thread_rng()
+                    .sample_iter(&Alphanumeric)
+                    .take(4)
+                    .map(char::from)
+                    .collect();
+                username = format!("{}_{}", base_username, suffix);
+            } else {
+                // For subsequent collisions, just increment
+                username = format!("{}_{}", base_username, counter);
+            }
+            counter += 1;
+        }
+
+        // We need to query for the user *after* inserting to get the ID
+        "INSERT INTO users (google_id, username, email, avatar_url) VALUES (?, ?, ?, ?)"
+            .with((
+                &google_user.sub,
+                &username,
+                &google_user.email,
+                &google_user.picture,
+            ))
+            .run(&mut *conn)
+            .await?;
+        
+        // Fetch the newly created user to return it
+        Self::find_by_google_id(conn, &google_user.sub)
+            .await?
+            .ok_or(AppError::UserNotFound) // Should not happen
+    }
+
+    /// Finds a single user by their unique username.
+    pub async fn find_by_username(
+        conn: &mut Conn,
+        username: &str,
+    ) -> Result<Option<User>, AppError> {
+        let result: Option<User> =
+            "SELECT id, google_id, username, email, avatar_url FROM users WHERE username = ?"
+                .with((username,))
+                .first(conn)
+                .await?;
+        Ok(result)
+    }
+
+    /// Finds a single user by their unique Google ID.
+    pub async fn find_by_google_id(
+        conn: &mut Conn,
+        google_id: &str,
+    ) -> Result<Option<User>, AppError> {
+        let result: Option<User> =
+            "SELECT id, google_id, username, email, avatar_url FROM users WHERE google_id = ?"
+                .with((google_id,))
+                .first(conn)
+                .await?;
+        Ok(result)
+    }
+}

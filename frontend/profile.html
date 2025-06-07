@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.username }} - ChiyaKindeu</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .profile-header {
+            background: white;
+            padding: 3rem 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 0.5rem 0;
+        }
+        .profile-username {
+            color: #64748b;
+            font-size: 1.125rem;
+            margin: 0 0 1.5rem 0;
+        }
+        .support-button {
+            background: #e11d48;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        .support-button:hover {
+            background: #be185d;
+            transform: translateY(-1px);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+        }
+        .messages-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 1.5rem 0;
+        }
+        .message-card {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 1rem;
+        }
+        .message-author {
+            font-weight: 500;
+            color: #0f172a;
+            margin: 0;
+        }
+        .message-date {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+        }
+        .message-content {
+            color: #334155;
+            margin: 0;
+            line-height: 1.5;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+            color: #64748b;
+        }
+        .empty-state p {
+            margin: 0.5rem 0 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-header">
+            <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="profile-avatar">
+            <h1 class="profile-name">{{ user.name }}</h1>
+            <p class="profile-username">@{{ user.username }}</p>
+            <a href="#" class="support-button">Support Creator</a>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <p class="stat-number">0</p>
+                    <p class="stat-label">Supporters</p>
+                </div>
+                <div class="stat-item">
+                    <p class="stat-number">0</p>
+                    <p class="stat-label">Messages</p>
+                </div>
+                <div class="stat-item">
+                    <p class="stat-number">0</p>
+                    <p class="stat-label">Tea Cups</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="messages-section">
+            <h2 class="section-title">Messages from Supporters</h2>
+            
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message-card">
+                    <div class="message-header">
+                        <img src="{{ message.supporter_avatar }}" alt="{{ message.supporter_name }}" class="message-avatar">
+                        <div>
+                            <h3 class="message-author">{{ message.supporter_name }}</h3>
+                            <p class="message-date">{{ message.created_at }}</p>
+                        </div>
+                    </div>
+                    <p class="message-content">{{ message.content }}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h3>No messages yet</h3>
+                    <p>Be the first to send a message of support!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html> 

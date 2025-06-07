@@ -1,74 +1,63 @@
-mod auth;
-mod routes;
 use axum::{
-    extract::{FromRef, Extension},
-    response::Html,
-    routing::get,
+    routing::{get},
     Router,
 };
-use axum_extra::extract::cookie::Key;
-use std::error::Error;
+use log::info;
 use std::net::SocketAddr;
-use std::env;
-use reqwest::Client as ReqwestClient;
+use std::sync::Arc;
 use tokio::net::TcpListener;
-use sqlx::mysql::MySqlPool;
+use tower_http::services::ServeDir;
+use tower_http::trace::TraceLayer;
 
-#[derive(Clone)]
-pub struct AppState {
-    db: MySqlPool,
-    ctx: ReqwestClient,
-    key: Key,
-    oauth_client_id: String,
-}
+mod config;
+mod error;
+mod handlers;
+mod models;
+mod auth;
 
-impl FromRef<AppState> for Key {
-    fn from_ref(state: &AppState) -> Self {
-        state.key.clone()
-    }
-}
+use crate::config::Config;
+// Corrected the handler imports
+use crate::handlers::{auth_handlers, dashboard_handlers, home_handlers, user_handlers, AppState};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    dotenv::dotenv().ok();
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set in environment variables");
-    let db = MySqlPool::connect(&database_url)
-        .await
-        .expect("Failed to connect to the database");
+async fn main() {
+    // Initialize logging
+    env_logger::init();
 
-    sqlx::migrate!()
-        .run(&db)
-        .await
-        .expect("Failed to run migrations");
+    // Load configuration from environment variables
+    let config = Config::from_env().expect("Failed to load configuration from environment variables");
+    
+    // Create a database connection pool
+    let db_pool = mysql_async::Pool::new(config.database_url.as_str());
+    info!("Database connection pool created.");
 
-    let ctx = ReqwestClient::new();
-    let oauth_client_id = env::var("GOOGLE_OAUTH_CLIENT_ID")
-        .expect("GOOGLE_OAUTH_CLIENT_ID must be set");
+    // Create the shared application state
+    let app_state = Arc::new(AppState { db_pool, config });
+    info!("Application state created.");
 
-    let state = AppState {
-        db,
-        ctx,
-        key: Key::generate(),
-        oauth_client_id: oauth_client_id.clone(),
-    };
+    // Define the application routes
+    let app = Router::new()
+        // Serve static files from the `frontend` directory
+        .nest_service("/static", ServeDir::new("frontend"))
+        
+        // Application routes
+        .route("/", get(home_handlers::landing_page))
+        .route("/login", get(auth_handlers::login_page))
+        .route("/dashboard", get(dashboard_handlers::dashboard_page))
+        .route("/:username", get(user_handlers::profile_page))
+        
+        // Authentication routes
+        .nest("/auth", auth_handlers::auth_router())
 
-    let router = Router::new()
-        .route("/", get(routes::landing_page))
-        .route("/login", get(routes::login_page))
-        .route("/home", get(|Extension(oauth_id): Extension<String>| routes::homepage(oauth_id)))
-        .route("/auth/google", get(auth::oauth::google_login))
-        .route("/auth/google/callback", get(auth::oauth::google_callback))
-        .with_state(state)
-        .layer(Extension(oauth_client_id));
+        // Add middleware for logging
+        .layer(TraceLayer::new_for_http())
+        
+        // Provide the application state to all handlers
+        .with_state(app_state);
 
-    // server address
+    // Start the server
     let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
-    let listener = TcpListener::bind(addr).await?;
-
-    // Start the Axum server
-    println!("Server running at http://{}", addr);
-    axum::serve(listener, router).await?;
-
-    Ok(())
+    info!("Server listening on http://{}", addr);
+    let listener = TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
