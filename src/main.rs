@@ -8,6 +8,11 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
+use sqlx::mysql::MySqlPool;
+use axum::http::HeaderValue;
+use axum::http::Method;
+use dotenvy::dotenv; 
+use std::env;
 
 mod config;
 mod error;
@@ -22,16 +27,16 @@ use crate::handlers::{auth_handlers, dashboard_handlers, home_handlers, user_han
 #[tokio::main]
 async fn main() {
     // Initialize logging
+    dotenv().ok();
     env_logger::init();
-    std::env::set_var("DATABASE_URL", "");
-    std::env::set_var("GOOGLE_CLIENT_ID", "");
-    std::env::set_var("GOOGLE_CLIENT_SECRET", "");
-    std::env::set_var("GOOGLE_REDIRECT_URI", "");
+
     // Load configuration from environment variables
     let config = Config::from_env().expect("Failed to load configuration from environment variables");
     
     // Create a database connection pool
-    let db_pool = mysql_async::Pool::new(config.database_url.as_str());
+    let db_pool = MySqlPool::connect(&config.database_url)
+        .await
+        .expect("Failed to create database pool");
     info!("Database connection pool created.");
 
     // Create the shared application state

@@ -1,4 +1,4 @@
-use mysql_async::Pool;
+use sqlx::mysql::MySqlPool;
 use tera::Tera;
 use lazy_static::lazy_static;
 
@@ -12,7 +12,7 @@ pub mod dashboard_handlers;
 
 /// Shared application state accessible by all handlers.
 pub struct AppState {
-    pub db_pool: Pool,
+    pub db_pool: MySqlPool,
     pub config: Config,
 }
 

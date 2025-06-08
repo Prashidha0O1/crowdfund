@@ -1,12 +1,13 @@
 use axum::{http::StatusCode, response::{IntoResponse, Response, Json}};
 use serde_json::json;
 use thiserror::Error;
+use log;
 
 /// A common error type for the entire application to handle various error sources.
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("Database error: {0}")]
-    DatabaseError(#[from] mysql_async::Error),
+    DatabaseError(#[from] sqlx::Error),
 
     #[error("Environment variable not found: {0}")]
     EnvVarError(#[from] std::env::VarError),

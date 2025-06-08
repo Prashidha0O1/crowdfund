@@ -53,15 +53,12 @@ pub async fn google_callback_handler(
     // Use the access token to get user info from Google
     let google_user = get_google_user(&token_response.access_token).await?;
 
-    // Get a database connection
-    let mut conn = state.db_pool.get_conn().await?;
-
     // Check if the user already exists, otherwise create them
-    let _user = match User::find_by_google_id(&mut conn, &google_user.sub).await? {
+    let _user = match User::find_by_google_id(&state.db_pool, &google_user.sub).await? {
         Some(existing_user) => existing_user,
         None => {
             // If user doesn't exist, create a new one
-            User::create_from_google_user(&mut conn, &google_user).await?
+            User::create_from_google_user(&state.db_pool, &google_user).await?
         }
     };
 

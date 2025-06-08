@@ -16,11 +16,8 @@ pub async fn profile_page(
     Path(username): Path<String>,
     State(state): State<Arc<AppState>>,
 ) -> Result<Html<String>, AppError> {
-    // Get a connection from the database pool
-    let mut conn = state.db_pool.get_conn().await?;
-    
     // Find the user by their username
-    let user = User::find_by_username(&mut conn, &username)
+    let user = User::find_by_username(&state.db_pool, &username)
         .await?
         .ok_or(AppError::UserNotFound)?;
 

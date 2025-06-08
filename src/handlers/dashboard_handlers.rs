@@ -2,7 +2,6 @@ use axum::{
     extract::State,
     response::{Html, IntoResponse},
 };
-use mysql_async::prelude::*;
 use std::sync::Arc;
 use tera::Context;
 
@@ -19,19 +18,19 @@ use crate::{
 pub async fn dashboard_page(
     State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut conn = state.db_pool.get_conn().await?;
-    
-    //
-    // !! IMPORTANT !!
-    // This fetches the *first* user from the database as a placeholder.
-    // To make this work correctly, you need to implement session management
-    // (e.g., using cookies) to identify the currently logged-in user.
-    // Corrected the query to use mysql_async instead of sqlx
-    let user: Option<User> = "SELECT * FROM users ORDER BY id DESC LIMIT 1"
-        .first(&mut conn)
-        .await?;
-
-    let user = user.ok_or_else(|| AppError::AuthError("Not logged in. No users found.".to_string()))?;
+    // Fetch the first user from the database as a placeholder
+    let user = sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, google_id, username, email, avatar_url, created_at
+        FROM users
+        ORDER BY id DESC
+        LIMIT 1
+        "#
+    )
+    .fetch_optional(&state.db_pool)
+    .await?
+    .ok_or_else(|| AppError::AuthError("Not logged in. No users found.".to_string()))?;
 
     let mut context = Context::new();
     context.insert("user", &user);
